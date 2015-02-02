@@ -35,6 +35,7 @@ public class COMWorker {
 				{
 					serial = (SerialPort) comm.open("SimpleWriteApp", 2000);
 					reader = new COMReader(serial);
+					reader.start();
 					writer = new COMWriter(serial);
 					serial.setSerialPortParams(57600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, 
 							SerialPort.PARITY_NONE);
@@ -55,6 +56,7 @@ public class COMWorker {
 	
 	private COMWriter writer = null;
 	private COMReader reader = null;
+	@SuppressWarnings("rawtypes")
 	private Enumeration portList = null;
 	private CommPortIdentifier comm = null;
 	private SerialPort serial = null;

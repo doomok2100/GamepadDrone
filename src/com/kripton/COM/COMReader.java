@@ -28,10 +28,14 @@ public class COMReader implements Runnable, SerialPortEventListener {
 		}
 		
 		readThread = new Thread(this);
+	}
+	
+	
+	public void start() {
 		readThread.start();
 	}
 
-	
+	@Override
 	public void run() {
 		
 		synchronized(mutex) {

@@ -1,18 +1,26 @@
 package com.kripton.gamepad;
-import com.kripton.COM.COMWorker;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 
 
-public class JoystickReciever {
+public class JoystickReciever implements Runnable {
 
 	
-	public static void main(String args[]) {
+	public JoystickReciever(Object _mutex) {
+		mutex = _mutex;
+		init();
+	}
+	
+	private void init() {
 		
-		Controller gamepad = null;
 		Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
-		Component[] comps = null;
+		
 		for(int i=0; i<controllers.length; i++) 
 		{
 			System.out.println(controllers[i].getName()+ " : " + controllers[i].getType());
@@ -25,44 +33,57 @@ public class JoystickReciever {
 				break;
 			}
 		}
-		
-		COMWorker worker = new COMWorker();
-		worker.write("Hello world!!!");
+
+		pollThread = new Thread(this);
+		pollThread.start();
+	}
+
+	
+	public void run() {
+
 		StringBuilder builder = new StringBuilder();
-		
 		if(comps != null) 
 		{
 			while(true) 
 			{
 				gamepad.poll();
-				for(int j=0; j<comps.length; j++) 
-				{
-					
-					if(comps[j].isAnalog()) 
+				
+				synchronized(mutex) {
+					for(int j=0; j<comps.length; j++) 
 					{
-						float poll = comps[j].getPollData();
-						if(poll != 0.0f) 
+						
+						if(comps[j].isAnalog()) 
 						{
+							float poll = comps[j].getPollData();
+							if(poll != 0.0f) 
+							{
+								polls.put(comps[j].getName(), poll);
+							}
+						}
+						else if(comps[j].getPollData() == 1.0f) {
 							builder.append(comps[j].getName());
 							builder.append(" : ");
-							builder.append(poll);
+							builder.append("On");
 							builder.append(";");
 						}
+						
 					}
-					else if(comps[j].getPollData() == 1.0f) {
-						builder.append(comps[j].getName());
-						builder.append(" : ");
-						builder.append("On");
-						builder.append(";");
-					}
-					
-				}					
-				System.out.println(builder.toString());
-				builder.setLength(0);
+				}
 				
+				builder.setLength(0);
 			}
 		}
 		
 	}
 	
+	
+	public Map<String, Float> getPolls() {
+		return polls;
+	}
+	
+	Controller gamepad = null;
+	Component[] comps = null;
+	Thread pollThread = null;
+	Map<String, Float> polls = Collections.synchronizedMap(new HashMap<String, Float>());
+	Object mutex = null;
 }
