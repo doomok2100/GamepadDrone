@@ -54,10 +54,20 @@ public class JoystickReciever implements Runnable {
 						
 						if(comps[j].isAnalog()) 
 						{
+						
 							float poll = comps[j].getPollData();
+							/* Get middle value of 1000 */
 							if(poll != 0.0f) 
 							{
-								polls.put(comps[j].getName(), poll);
+								val += poll;
+								if(k == 500) {
+									val /= k;
+									polls.put(comps[j].getName(), val);
+									k = 0;
+									val = 0;
+								}
+								
+								k++;
 							}
 						}
 						else if(comps[j].getPollData() == 1.0f) {
@@ -86,4 +96,7 @@ public class JoystickReciever implements Runnable {
 	Thread pollThread = null;
 	Map<String, Float> polls = Collections.synchronizedMap(new HashMap<String, Float>());
 	Object mutex = null;
+	
+	int k = 0;
+	float val = 0;
 }

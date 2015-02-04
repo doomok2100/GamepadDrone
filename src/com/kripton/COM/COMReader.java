@@ -27,30 +27,34 @@ public class COMReader implements Runnable, SerialPortEventListener {
 			e.printStackTrace();
 		}
 		
-		readThread = new Thread(this);
 	}
 	
 	
-	public void start() {
-		readThread.start();
+	public boolean isRead() {
+		return isRead;
 	}
-
+	
+	
+	public void dropState() {
+		isRead = false;
+	}
+	
+	public void close() throws IOException {
+		inStr.close();
+	}
+	
+	
 	@Override
 	public void run() {
 		
-		synchronized(mutex) {
-			
-			while(!run) {
-				
-				try 
-				{
-					mutex.wait();	
-				
+		while(!run) {
+			synchronized(mutex) {
+				try {
+					mutex.wait();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
-				}	
+				}
 			}
-			
 		}
 		
 	}
@@ -73,12 +77,14 @@ public class COMReader implements Runnable, SerialPortEventListener {
 	        
 	        case SerialPortEvent.DATA_AVAILABLE:
 	        	
-	        	byte[] readBuffer = new byte[20];
+	        	byte[] readBuffer = new byte[1024];
 	            try {
 	                while (inStr.available() > 0) {
 	                    inStr.read(readBuffer);
 	                }
-	                System.out.print(new String(readBuffer));
+	                System.out.print("Read from COM: ");
+	                System.out.println(new String(readBuffer));
+	                isRead = true;
 	            } catch (IOException e) {
 	            	System.out.println(e);
 	            }
@@ -89,8 +95,9 @@ public class COMReader implements Runnable, SerialPortEventListener {
 	
 	private SerialPort serial = null;
 	private InputStream inStr = null;
-	private Thread readThread = null;
+	private volatile boolean isRead = false;
 	private Object mutex = new Object();
 	private boolean run = false;
+
 	
 }

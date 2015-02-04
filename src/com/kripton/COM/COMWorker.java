@@ -5,6 +5,7 @@ import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
 
+import java.io.IOException;
 import java.util.Enumeration;
 
 public class COMWorker {
@@ -22,6 +23,26 @@ public class COMWorker {
 	}
 	
 	
+	public boolean isRead() {
+		return reader.isRead();
+	}
+	
+	/* */
+	public void dropReadingState() {
+		reader.dropState();
+	}
+	
+	public void stop() {
+		try {
+			writer.close();
+			reader.close();
+			serial.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
 	private void init() {
 		
 		portList = CommPortIdentifier.getPortIdentifiers();
@@ -35,9 +56,8 @@ public class COMWorker {
 				{
 					serial = (SerialPort) comm.open("SimpleWriteApp", 2000);
 					reader = new COMReader(serial);
-					reader.start();
 					writer = new COMWriter(serial);
-					serial.setSerialPortParams(57600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, 
+					serial.setSerialPortParams(9600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, 
 							SerialPort.PARITY_NONE);
 					break;
 				}
@@ -60,5 +80,6 @@ public class COMWorker {
 	private Enumeration portList = null;
 	private CommPortIdentifier comm = null;
 	private SerialPort serial = null;
+
 
 }

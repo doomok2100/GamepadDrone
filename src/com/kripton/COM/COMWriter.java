@@ -17,6 +17,11 @@ public class COMWriter {
 	}
 	
 	
+	public void close() throws IOException {
+		outputStr.close();
+	}
+	
+	
 	private void init() {
 
 		try {
