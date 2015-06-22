@@ -2,7 +2,9 @@ package com.kripton.COM;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.TooManyListenersException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
@@ -12,18 +14,19 @@ import gnu.io.SerialPortEventListener;
 public class COMReader implements Runnable, SerialPortEventListener {
 
 	
-	public COMReader(SerialPort _serial) {
+	public COMReader() {
+		
+	}
+	
+	
+	public void setPort(SerialPort _serial) {
 		
 		serial = _serial;
 		
 		try {
 			inStr = serial.getInputStream();
-			serial.addEventListener(this);
-			serial.notifyOnDataAvailable(true);
-
+			opened = true;
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (TooManyListenersException e) {
 			e.printStackTrace();
 		}
 		
@@ -31,31 +34,101 @@ public class COMReader implements Runnable, SerialPortEventListener {
 	
 	
 	public boolean isRead() {
-		return isRead;
+		return wasRead;
 	}
 	
-	
-	public void dropState() {
-		isRead = false;
-	}
 	
 	public void close() throws IOException {
-		inStr.close();
+		
+		if(opened) 
+		{
+			inStr.close();
+			opened = false;
+		}
+	}
+	
+	
+	public void start() {
+		readerThread = new Thread(this);
+		readerThread.start();
+	}
+	
+	
+	public String getReadData() {
+		if(wasRead) 
+		{
+			byte[] buf = new byte[pos];
+			
+			for(int i=0; i<BUFFER_SIZE; i++) 
+			{
+				if(i < pos) 
+				{
+					buf[i] = readBuffer[i];
+				}
+				readBuffer[i] = '\0';
+			}			
+			pos = 0;
+		
+			String res = "";
+			synchronized(readData) 
+			{
+				ListIterator<String> iter = readData.listIterator();
+			
+				while(iter.hasNext())
+				{
+					res += iter.next();
+				}
+				readData.clear();
+			}
+			res += new String(buf);
+			
+			wasRead = false;
+			
+			return (res);
+		}
+		else {
+			return null;
+		}
 	}
 	
 	
 	@Override
 	public void run() {
 		
-		while(!run) {
-			synchronized(mutex) {
-				try {
-					mutex.wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		try {
+			while(true) 
+			{	
+				if(!wasRead) 
+				{
+					while(inStr.available() > 0) 
+					{	
+						if(pos == BUFFER_SIZE-1) 
+						{
+							synchronized(readData) 
+							{
+								String data = getReadData();
+								readData.add(data);
+							}
+						}
+						
+	                    inStr.read(readBuffer, pos++, 1);
+	                    
+	                    if((readBuffer[pos-1] == '\n') && (readBuffer[0] != '\n')) 
+	                    {
+	                    	wasRead = true;
+	                    	break;
+	                    }
+	                    else if(readBuffer[0] == '\n') 
+	                    {
+	                    	readBuffer[0] = '\0';
+	                    	pos = 0;
+	                    }
+					}
 				}
 			}
-		}
+		} catch (IOException e) {
+        	System.out.println(e);
+        }
 		
 	}
 	
@@ -77,27 +150,23 @@ public class COMReader implements Runnable, SerialPortEventListener {
 	        
 	        case SerialPortEvent.DATA_AVAILABLE:
 	        	
-	        	byte[] readBuffer = new byte[1024];
-	            try {
-	                while (inStr.available() > 0) {
-	                    inStr.read(readBuffer);
-	                }
-	                System.out.print("Read from COM: ");
-	                System.out.println(new String(readBuffer));
-	                isRead = true;
-	            } catch (IOException e) {
-	            	System.out.println(e);
-	            }
 	            break;
         }
     }
 	
 	
+	
 	private SerialPort serial = null;
 	private InputStream inStr = null;
-	private volatile boolean isRead = false;
-	private Object mutex = new Object();
-	private boolean run = false;
+	
+	private final int BUFFER_SIZE = 1024;
 
+	private Thread readerThread;
+	private int pos = 0;
+	private volatile boolean wasRead = false;
+	byte[] readBuffer = new byte[BUFFER_SIZE];
+	
+	private boolean opened = false;
+	List<String> readData = new ArrayList<String>();
 	
 }

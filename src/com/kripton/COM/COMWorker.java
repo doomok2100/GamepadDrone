@@ -8,69 +8,135 @@ import gnu.io.UnsupportedCommOperationException;
 import java.io.IOException;
 import java.util.Enumeration;
 
+import javax.swing.JComboBox;
+
 public class COMWorker {
 	
 	
 	public COMWorker() {
-		init();
+		reader = new COMReader();
 	}
 	
 	
 	public void write(String data) {
-		if(writer != null) {
-			writer.write(data);
+		synchronized(this)
+		{
+			if(writer != null) {
+				writer.write(data);
+			}
 		}
 	}
 	
 	
 	public boolean isRead() {
-		return reader.isRead();
-	}
-	
-	/* */
-	public void dropReadingState() {
-		reader.dropState();
-	}
-	
-	public void stop() {
-		try {
-			writer.close();
-			reader.close();
-			serial.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		synchronized(this)
+		{
+			return reader.isRead();
 		}
 	}
 	
 	
-	private void init() {
-		
-		portList = CommPortIdentifier.getPortIdentifiers();
-		
-		try {
-		
+	public String getReadData() {
+		synchronized(this)
+		{
+			bufferedData = reader.getReadData();
+			return bufferedData;
+		}
+	}
+	
+	/*
+	 * Return last read value
+	 */
+	public String getBufferedData() {
+		synchronized(this)
+		{
+			if(bufferedData != null)
+			{
+				return bufferedData;
+			}
+			
+			return new String("");
+		}	
+	}
+	
+	
+	public void closePort() {
+		synchronized(this)
+		{
+			try {
+				if(serial != null)
+				{
+					writer.close();
+					reader.close();
+					serial.close();							
+				}
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+	public void showCOMPorts(JComboBox<String> ports) {
+		synchronized(this)
+		{
+			portList = CommPortIdentifier.getPortIdentifiers();
+	
 			while(portList.hasMoreElements()) 
 			{
 				comm = (CommPortIdentifier) portList.nextElement();
 				if(comm.getPortType() == CommPortIdentifier.PORT_SERIAL) 
 				{
-					serial = (SerialPort) comm.open("SimpleWriteApp", 2000);
-					reader = new COMReader(serial);
-					writer = new COMWriter(serial);
-					serial.setSerialPortParams(9600, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, 
-							SerialPort.PARITY_NONE);
-					break;
-				}
-				
+					String name = comm.getName();
+					ports.addItem(name);
+				}	
 			}
-		} catch (UnsupportedCommOperationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (PortInUseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		
+	}
+	
+	
+	public void openCOMPort(String name, int baud) {
+		synchronized(this)
+		{
+			portList = CommPortIdentifier.getPortIdentifiers();
+			
+			try {
+				
+				while(portList.hasMoreElements()) 
+				{
+					comm = (CommPortIdentifier) portList.nextElement();
+					System.out.println(comm.getName());
+					if((comm.getPortType() == CommPortIdentifier.PORT_SERIAL) && comm.getName().equals(name)) 
+					{
+						serial = (SerialPort) comm.open("MyApp", 2000); //+
+						reader.setPort(serial);
+						writer = new COMWriter(serial);
+						serial.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, 
+								SerialPort.PARITY_NONE); //++
+						opened = true;
+						reader.start();
+						break;
+					}
+					
+				}
+			} catch (UnsupportedCommOperationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (PortInUseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+	
+	public boolean isOpened() {
+		synchronized(this)
+		{
+			return opened;
+		}
 	}
 	
 	
@@ -81,5 +147,6 @@ public class COMWorker {
 	private CommPortIdentifier comm = null;
 	private SerialPort serial = null;
 
-
+	private boolean opened = false;
+	private String bufferedData = null;
 }
