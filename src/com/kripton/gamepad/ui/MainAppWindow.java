@@ -19,6 +19,9 @@ import javax.swing.border.LineBorder;
 import javax.swing.text.DefaultCaret;
 import javax.swing.JComboBox;
 
+import com.kripton.gamepad.chart.ChartFrame;
+import com.kripton.gamepad.visual.GLFrame;
+
 public class MainAppWindow {
 
 	private JFrame frame;
@@ -64,6 +67,7 @@ public class MainAppWindow {
 			@Override
 			public void windowClosing(java.awt.event.WindowEvent e) {
 				con.closePort();
+				System.exit(0);
 			}
 			
 		});
@@ -280,6 +284,10 @@ public class MainAppWindow {
 		openGraphButton.setBounds(184, 531, 149, 25);
 		frame.getContentPane().add(openGraphButton);
 		
+		JButton btnRealtimeMode = new JButton("Realtime mode");
+		btnRealtimeMode.setBounds(372, 531, 149, 25);
+		frame.getContentPane().add(btnRealtimeMode);
+		
 		con.setInfoLabels(writeLbls, readLbls);
 		
 		openGraphButton.addActionListener(new ActionListener() {
@@ -295,6 +303,18 @@ public class MainAppWindow {
 			
 		});
 		
+		
+		btnRealtimeMode.addActionListener(new ActionListener(){
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+				GLFrame realtimeFrame = new GLFrame();
+				realtimeFrame.setVisible(true);
+				
+			}
+		}); 
+			
 	}
 	
 	

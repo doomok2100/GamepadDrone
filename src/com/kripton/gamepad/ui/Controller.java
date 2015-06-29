@@ -13,6 +13,7 @@ import javax.swing.JTextArea;
 
 import com.kripton.COM.COMWorker;
 import com.kripton.gamepad.JoystickReciever;
+import com.kripton.gamepad.chart.ChartFrame;
 import com.kripton.gamepad.chart.ChartParser;
 
 public class Controller implements Runnable {
@@ -24,6 +25,7 @@ public class Controller implements Runnable {
 		initCodes();
 		worker = new COMWorker();
 		chartParser = new ChartParser();
+		tracesNames = new String[0];
 		
 	}
 
@@ -49,6 +51,7 @@ public class Controller implements Runnable {
 	
 	/* Open serial port for communication */
 	public void openCOMPort(String name, int baud) {
+		//Runtime.getRuntime().exec("sudo rm /var/lock/LCK*USB0");
 		worker.openCOMPort(name, baud);
 		this.start();
 	}
@@ -85,9 +88,19 @@ public class Controller implements Runnable {
 		int paramsCount = chartParser.getParamsCount(worker.getBufferedData());
 		tracesID = new int[paramsCount];
 		
+		String traceName = null;
 		for(int i=0; i<paramsCount; i++)
 		{
-			tracesID[i] = chartFrame.addTrace();
+			if(tracesNames.length == paramsCount)
+			{
+				traceName = tracesNames[i];
+			}
+			else 
+			{
+				traceName = String.valueOf(i);
+			}
+			System.out.println(traceName);
+			tracesID[i] = chartFrame.addTrace(traceName);
 		}
 		
 	}
@@ -96,7 +109,8 @@ public class Controller implements Runnable {
 	
 	@Override
 	public void run() {
-	
+		
+		boolean paramsFlagFound = false;
 		while(true) 
 		{	
 			if(joystickReceiver.started)
@@ -110,12 +124,27 @@ public class Controller implements Runnable {
 				String readData = worker.getReadData();
 				comInfo.append("In: "+readData);
 				
+				if(paramsFlagFound)
+				{
+					tracesNames = readData.split(",");
+					paramsFlagFound = false;
+				}
+				else if(readData.length() >= 4 && readData.charAt(0) == '0' && readData.charAt(1) == 'x' 
+						&& readData.charAt(2) == '0' && readData.charAt(3) == '1')
+				{
+					comInfo.append("Found params flag"+'\n');
+					//comInfo.append(readData);
+					paramsFlagFound = true;
+				}
+				
 				/* Should add all parameters */
 				if(chartFrame != null && chartFrame.opened) 
 				{
-					int parsePos = 6;
-					double pointY = chartParser.parse(readData, parsePos);
-					chartFrame.addPoint(pointY, tracesID[parsePos]);					
+					for(int i=0; i<tracesID.length; i++)
+					{
+						double pointY = chartParser.parse(readData, i);
+						chartFrame.addPoint(pointY, tracesID[i]);
+					}
 				}
 				
 				/* Find label by it's code */
@@ -213,6 +242,8 @@ public class Controller implements Runnable {
 	
 	private ChartFrame chartFrame;
 	private ChartParser chartParser;
+	
+	private String[] tracesNames;
 	private int[] tracesID; 
 	
 	private JoystickReciever joystickReceiver = null;
@@ -227,6 +258,8 @@ public class Controller implements Runnable {
 	/* First code then label */
 	private Map<String, JLabel> infoWriteLbls = new HashMap<String, JLabel>();
 	private Map<String, JLabel> infoReadLbls = new HashMap<String, JLabel>();
+	
+	private final String PARAMS_FLAG = "0x01"+'\n';
 	
 	int last_val = 0;
 }
