@@ -78,7 +78,7 @@ public class COMWorker {
 	}
 	
 	
-	public void showCOMPorts(JComboBox<String> ports) {
+	public void showCOMPorts(JComboBox ports) {
 		synchronized(this)
 		{
 			portList = CommPortIdentifier.getPortIdentifiers();

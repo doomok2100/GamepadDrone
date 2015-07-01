@@ -158,7 +158,7 @@ public class MainAppWindow {
 		lblSlider.setBounds(372, 37, 130, 15);
 		frame.getContentPane().add(lblSlider);
 		
-		comboBox = new JComboBox<String>();
+		comboBox = new JComboBox();
 		comboBox.setBounds(12, 30, 137, 24);
 		frame.getContentPane().add(comboBox);
 		
@@ -319,7 +319,7 @@ public class MainAppWindow {
 	
 	
 	static Controller con;
-	JComboBox<String> comboBox;
+	JComboBox comboBox;
 	JTextArea txtrComInfo;
 	
 	private boolean connected = false;

@@ -44,7 +44,7 @@ public class Controller implements Runnable {
 	
 	
 	/* Print COM ports to JComboBox for selection */
-	public void showCOMPorts(JComboBox<String> ports) {
+	public void showCOMPorts(JComboBox ports) {
 		worker.showCOMPorts(ports);
 	}
 	
